@@ -2,12 +2,17 @@
 # /usr/bin/env python2.7
 # /usr/bin/python
 
-# from enum import Enum # 3.0+
-from aetypes import Enum  # 2.7
+# # RELPATH for tests ## WARNING: sort imports on save must be turned off :(  @SEE: PyDev->Editor->Save Actions
+import os, sys
+lib_path = os.path.abspath( ".." )
+sys.path.append( lib_path )
+
+from aetypes import Enum  # NOT COMPAT 3.0
 from subprocess import call
+from SomeSampleClasses import Square
+
 import sys
 
-from SomeSampleClasses import Square
 
 def method1():
     print( "method1" )
