@@ -12,6 +12,7 @@ sys.path.append( lib_path )
 from aetypes import Enum  # NOT COMPAT 3.0
 from subprocess import call
 from SomeSampleClasses import Square
+from ATHPy import StrUtl
 
 import sys
 
@@ -29,6 +30,7 @@ def doStuff( delegate ):
     print( "did stuff" )
 
 # instantiate
+strUtl = StrUtl()
 shape = Square()
 shape.setColor( "red" )  # set to "red", False, False, None
 shape.setColor( "red", True )  # set to "red", True, False, None
@@ -78,3 +80,7 @@ print( "5/2   = %r" % division )
 
 division = 5 / 2.0
 print( "5/2.0 = %r" % division )
+
+matchingSymbolString = "{.{.}.}.{.}"
+matchingSymbolPos = strUtl.findMatchingSymbol( matchingSymbolString, "{", "}" )
+print( "MatchingSymbolPos: [%r]='%r'" % ( matchingSymbolPos, matchingSymbolString[matchingSymbolPos] ) )

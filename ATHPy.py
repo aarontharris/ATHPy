@@ -1,5 +1,41 @@
+# ATHPy (Pronounced At - Pie)
+# Junk drawer of useful tidbits I don't want to re-write
+# I know throwing everything in one file isn't awesome, but portability is valuable
+
 import logging
 import os
+
+class StrUtl:
+    def findMatchingSymbol( self, string, leftSymbol, rightSymbol ):
+        try:
+            """
+            obeys nesting
+            assumes we're reading left to right
+            assumes the first character is the left symbol
+            assumes left symbol and right symbol are different
+            returns position of matching symbol 
+            """
+            l = leftSymbol
+            r = rightSymbol
+            pos = 0
+            lCount = 1
+            while lCount > 0:
+                rpos = string.index( r, pos + 1 )
+                lpos = string.index( l, pos + 1 )
+                if lpos != -1 and lpos < rpos:
+                    lCount += 1
+                    pos = lpos
+                else:
+                    lCount -= 1
+                    pos = rpos
+
+                if pos == -1:
+                    break
+
+            return pos
+        except Exception as e:
+            return -1
+
 
 class DirUtl:
     __cwd = []
