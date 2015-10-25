@@ -7,7 +7,7 @@ from aetypes import Enum  # 2.7
 from subprocess import call
 import sys
 
-from classes import Square
+from SomeSampleClasses import Square
 
 def method1():
     print( "method1" )

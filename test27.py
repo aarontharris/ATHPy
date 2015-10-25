@@ -8,7 +8,7 @@ from aetypes import Enum  # NOT COMPAT 3.0
 from subprocess import call
 import sys
 
-from classes import Square
+from SomeSampleClasses import Square
 
 
 def method1():

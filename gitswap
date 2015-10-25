@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.7
 
-from ATHCommons import DirUtl, EnvUtl
+from ATHPy import DirUtl, EnvUtl
 
 sysUtl = DirUtl()
 envUtl = EnvUtl();
