@@ -1,4 +1,4 @@
-# ATHPy
+# ATHPy (Pronounced At - Pie)
 Python bits I don't care to write again
 
 # How to use it
