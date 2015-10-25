@@ -1,0 +1,14 @@
+#!/usr/bin/env python2.7
+
+from ATHCommons import DirUtl, EnvUtl
+
+sysUtl = DirUtl()
+envUtl = EnvUtl();
+
+print( sysUtl.getCwd() )
+sysUtl.pushDir( ".." )
+print( sysUtl.getCwd() )
+sysUtl.popDir()
+print( sysUtl.getCwd() )
+
+YSPORTS_ROOT = envUtl.getEnv( "YSPORTS_ROOT", "No YSPORTS_ROOT defined" )
