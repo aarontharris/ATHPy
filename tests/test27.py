@@ -1,6 +1,4 @@
 #!/usr/bin/env python2.7
-# /usr/bin/env python3.5
-# /usr/bin/python
 
 # Currently supports Python 2.7.10 -- Standard OSX Distribution
 
@@ -30,13 +28,14 @@ def doStuff( delegate ):
     print( "did stuff" )
 
 # instantiate
-strUtl = StrUtl()
 shape = Square()
 shape.setColor( "red" )  # set to "red", False, False, None
 shape.setColor( "red", True )  # set to "red", True, False, None
 shape.setColor( "red", True, True )  # set to "red", True, True, None
 shape.setColor( "red", True, False, params="reversed" )  # set to "red", False, True, params=reversed  -- WTF
 print ( shape.describe() )
+
+
 
 # system call
 call( ["ls", "-l"] )
@@ -82,5 +81,5 @@ division = 5 / 2.0
 print( "5/2.0 = %r" % division )
 
 matchingSymbolString = "{.{.}.}.{.}"
-matchingSymbolPos = strUtl.findMatchingSymbol( matchingSymbolString, "{", "}" )
+matchingSymbolPos = StrUtl.findMatchingSymbol( matchingSymbolString, "{", "}" )
 print( "MatchingSymbolPos: [%r]='%r'" % ( matchingSymbolPos, matchingSymbolString[matchingSymbolPos] ) )
