@@ -5,6 +5,7 @@
 import logging
 import os
 import re
+import subprocess
 
 
 
@@ -185,6 +186,16 @@ class EnvUtl:
         if val == None:
             raise Exception( failMsg )
         return val
+
+    @staticmethod
+    def execute( cmd ): #{
+        #proc = subprocess.Popen(["cat", "/etc/services"], stdout=subprocess.PIPE, shell=True)
+        #(out, err) = proc.communicate()
+        #print "program output:", out
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+        (out, err) = proc.communicate()
+        return out
+    #}
 
 
 
