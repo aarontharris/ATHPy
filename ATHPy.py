@@ -2,6 +2,7 @@
 # Junk drawer of useful tidbits I don't want to re-write
 # I know throwing everything in one file isn't awesome, but portability is valuable
 
+import shutil
 import logging
 import os
 import subprocess
@@ -34,6 +35,38 @@ def doc( *line ):
     return annotate
 
 
+# GetOpts #########################
+class Log:  # {
+    @staticmethod
+    def __msg( msg, _error=False, _newline=True ):  # {
+        writeMe = msg
+        if _newline:
+            writeMe += "\n"
+        if _error:
+            sys.stderr.write( writeMe )
+        else:
+            sys.stdout.write( writeMe )
+    # }
+
+    @staticmethod
+    def d( msg, newline=True ):  # {
+        Log.__msg( msg, _error=False, _newline=newline )
+    # }
+
+    @staticmethod
+    def e( *obj ):  # {
+        for o in obj:
+            if isinstance( o, basestring ):
+                Log.__msg( o, _error=True, _newline=True )
+            if isinstance( o, Exception ):
+                logging.exception( o )
+    # }
+
+    @staticmethod
+    def eMsg( exception ):  # {
+        Log.__msg( str( exception ), _error=True, _newline=True )
+    # }
+# }
 
 # GetOpts #########################
 @doc()  # Built on getopt but much more convenient
@@ -247,7 +280,7 @@ class GetOpts:  # {
 
 
 # DirUtl #########################
-class DirUtl:
+class DirUtl:  # {
     __cwd = []
 
     def __init__( self ):
@@ -299,12 +332,19 @@ class DirUtl:
         """True if the path exists and is a dir"""
         return os.path.isdir( path )
 
+    # @doc  # Check if the given path exists, false for broken symlinks
     @params( path=str )  # path to be checked
     @output( bool )
-    def exists( self, path ):
-        """Check if the given path exists, false for broken symlinks"""
+    @staticmethod
+    def exists( path ):
         return os.path.exists( path )
 
+    @staticmethod
+    def copyFile( srcFile, dstFolder ):  # {
+        if DirUtl.exists( srcFile ) and DirUtl.exists( dstFolder ):
+            shutil.copy( srcFile, dstFolder )
+    # }
+# }
 
 
 # StrUtl #########################

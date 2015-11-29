@@ -1,30 +1,24 @@
 #!/usr/bin/python
 
-import logging
-import sys
-import getopt
-import ATHPy
-from ATHPy import GetOpts
+from ATHPy import *  # @UnusedWildImport
 
 def main():  # {
     opts = GetOpts()
-    opts.addDescription( "blah blah" )
-#     opts.addDescription( "Blah2" )
-    opts.add( "platform", "p", "string", True, "Which platform are we installing on", method=handlePlatform )
-    opts.add( "test", "t", None, True, "testing 123", method=handleTest )
+    opts.addDescription( "Install ATHPy.py to the python path so that its widely available" )
+    opts.addDescription( "By default ATHPy.py is installed to the python site-packages or dist-packages folder" )
+    opts.addDescription( "You may override the path with --path=/path/to/install" )
+    opts.add( "path", "p", "string", False, "Override the default path" )
 
     if opts.buildSafe( sys.argv ):  # {
-        platform = opts.get( 'platform', 0 )
-        print "platform got '%s'" % platform
+        path = opts.get( 'path', EnvUtl.getBestPythonLibDir() )
+        try:
+            DirUtl.copyFile( "./ATHPy.pyc", path )
+            Log.d( "Installed to %s" % path )
+        except IOError as err:
+            Log.eMsg( err )  # likely a permission problem
+        except Exception as err:
+            Log.e( err )
     # }
 # }
 
-def handlePlatform( val ):
-    print "Got %s" % val
-
-def handleTest( val ):
-    print "Got %s" % val
-
-if __name__ == '__main__':
-    main()
-
+if __name__ == '__main__': main()
