@@ -59,6 +59,8 @@ class GetOpts:  # {
     __optVals = {}
     __description = []
     __widest = 0
+    __hasRequired = False
+    __hasNotRequired = False
 
     def __init__( self ):  # {
         pass
@@ -68,19 +70,25 @@ class GetOpts:  # {
     @params( longKey=str )  # the option in long form --optionName
     @params( shortKey=str )  # the option in short form -o
     @params( opType=str )  # the expected input data type expressed to the user via usage()
+    @params( req=bool )  # True if required else False or None
     @params( desc=str )  # the option description expressed to the user via usage()
     @params( public=bool )  # Display this option in the usage()
     @params( method="lambda method" )  # "def methodName( val )" even if opt takes no value. Where val = value entered by the user or None
     @output( None )
-    def add( self, longKey, shortKey=None, opType=None, desc="", public=True, method=None ):  # {
+    def add( self, longKey, shortKey=None, opType=None, req=False, desc="", method=None, public=True ):  # {
         sKey = shortKey if shortKey and len( shortKey ) > 0 else "_"
         lKey = longKey if longKey and len( longKey ) > 0 else "_"
         desc = desc if desc else ""
         opType = opType if opType else ""
-        opData = { "short": sKey, "long": lKey, "type": opType, "desc": desc, "public": public, "method": method }
+        opData = { "short": sKey, "long": lKey, "type": opType, "req": req, "desc": desc, "public": public, "method": method }
         self.__optData.append( opData )
         self.__optLookup[sKey] = opData
         self.__optLookup[lKey] = opData
+
+        if req:
+            self.__hasRequired = True
+        if not req:
+            self.__hasNotRequired = True
     # }
 
     @doc()  # Must be called before build() or buildSafe()
@@ -156,7 +164,7 @@ class GetOpts:  # {
             return True
         except Exception as e:
             # logging.exception( e )
-            print "Invalid Usage: %s\n" % str( e )
+            print "Invalid Usage: %s\n" % str( e ).rstrip()
             print self.usage()
             return False
         # }
@@ -176,26 +184,39 @@ class GetOpts:  # {
     def usage( self ):  # {
         out = ""
 
-        for desc in self.__description:
-            out += ( desc + "\n" ) if desc else ""
+        if self.__description:  # {
+            for desc in self.__description:
+                out += ( desc + "\n" ) if desc else ""
+            out += "\n"
+        # }
 
-        for opt in self.__optData:  # {
-            if not opt['public']:
-                continue
+        for req in [True, False]:  # {
+            if req and self.__hasRequired:
+                out += "Required Arguments:\n"
+            if not req and self.__hasNotRequired:
+                out += "Optional Arguments:\n"
 
-            if opt['long'] != "_":
-                optName = opt['long']
-                optName += ( "=<" + opt['type'] + ">" ) if opt['type'] else ""
-                outLong = ( "--%-" + str( self.__widest ) + "s%s\n" ) % ( optName, opt['desc'] )
-                out += outLong
+            for opt in self.__optData:  # {
+                if opt['req'] != req:
+                    continue
+                if not opt['public']:
+                    continue
 
-            if opt['short'] != "_":
-                optName = opt['short']
-                optName += ( " <" + opt['type'] + ">" ) if opt['type'] else ""
-                desc = ( "Short for: --%s" % opt['long'] ) if opt['long'] and opt['long'] != "_" else opt['desc']
-                outShort = ( " -%-" + str( self.__widest ) + "s%s\n" ) % ( optName, desc )
-                out += outShort
+                if opt['long'] != "_":
+                    optName = opt['long']
+                    optName += ( "=<" + opt['type'] + ">" ) if opt['type'] else ""
+                    desc = opt['desc']
+                    outLong = ( "  --%-" + str( self.__widest ) + "s%s\n" ) % ( optName, opt['desc'] )
+                    out += outLong
 
+                if opt['short'] != "_":
+                    optName = opt['short']
+                    optName += ( " <" + opt['type'] + ">" ) if opt['type'] else ""
+                    desc = ( "Short for: --%s" % opt['long'] ) if opt['long'] and opt['long'] != "_" else opt['desc']
+                    outShort = ( "   -%-" + str( self.__widest ) + "s%s\n" ) % ( optName, desc )
+                    out += outShort
+
+            # }
         # }
         return out
     # }
@@ -355,8 +376,7 @@ class StrUtl:
 
 
 # EnvUtl #########################
-class EnvUtl:
-
+class EnvUtl:  # {
     @staticmethod
     def isLinux():
         return _platform == "linux" or _platform == "linux2"
@@ -399,6 +419,21 @@ class EnvUtl:
         ( out, err ) = proc.communicate()  # @UnusedVariable
         return out
     # }
+
+    @doc()  # returns the best dir in python's lib path
+    @doc()  # prefers site-packages over dist-packages
+    @doc()  # worst case, returns the absolute path of the current working dir
+    @staticmethod
+    def getBestPythonLibDir():  # {
+        for path in sys.path:
+            if str( path ).endswith( "site-packages" ):
+                return path
+        for path in sys.path:
+            if str( path ).endswith( "dist-packages" ):
+                return path
+        return sys.path[-1]
+    # }
+# }
 
 
 

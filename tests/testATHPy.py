@@ -8,7 +8,7 @@ sys.path.append( lib_path )
 from aetypes import Enum  # NOT COMPAT 3.0
 from subprocess import call
 from SomeSampleClasses import Square
-from ATHPy import StrUtl, GetOpts
+from ATHPy import StrUtl, GetOpts, EnvUtl
 
 import logging
 import sys
@@ -24,6 +24,8 @@ except Exception as e:
     print "Invalid Usage: %s" % str( e )
     opts.usage()
 
+bestLibPath = EnvUtl.getBestPythonLibDir()
+print "Best Lib Path: '%s'" % bestLibPath
 
 value = None
 print( "isString(%r)='%r'" % ( value, StrUtl.isString( value ) ) )

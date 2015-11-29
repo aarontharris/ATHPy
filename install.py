@@ -8,10 +8,10 @@ from ATHPy import GetOpts
 
 def main():  # {
     opts = GetOpts()
-    opts.addDescription( "Blah" )
-    opts.addDescription( "Blah2" )
-    opts.add( "platform", "p", "string", "Which platform are we installing on", method=handlePlatform )
-    opts.add( "test", "t", None, "testing 123", method=handleTest )
+    opts.addDescription( "blah blah" )
+#     opts.addDescription( "Blah2" )
+    opts.add( "platform", "p", "string", True, "Which platform are we installing on", method=handlePlatform )
+    opts.add( "test", "t", None, True, "testing 123", method=handleTest )
 
     if opts.buildSafe( sys.argv ):  # {
         platform = opts.get( 'platform', 0 )
