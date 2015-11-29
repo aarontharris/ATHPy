@@ -37,22 +37,17 @@ def doc( *line ):
 
 # GetOpts #########################
 @doc()  # Built on getopt but much more convenient
-@doc()  # EX:
 @doc()  # EX: import sys
 @doc()  # EX: from ATHPy import GetOpts
-@doc()  # EX:
-@doc()  # EX: opts = GetOpts()
-@doc()  # EX: opts.add("name", "n", "string", "Person's name")
-@doc()  # EX: opts.add("age", "a", "int", "Person's age", method=handleAge)
-@doc()  # EX: if opts.buildSafe( sys.argv ): # buildSafe shows usage() on error
-@doc()  # EX:     opts.get('platform', -1)
 @doc()  # EX:
 @doc()  # EX: def handleAge( val ):
 @doc()  # EX:     print "Age=%s" % val
 @doc()  # EX:
-@doc()  # EX: if __name__ == '__main__':
-@doc()  # EX:     main()
-@doc()  # EX:
+@doc()  # EX: opts = GetOpts()
+@doc()  # EX: opts.add("name", "n", "string", True, "Person's name")
+@doc()  # EX: opts.add("age", "a", "int", False, "Person's age", method=handleAge)
+@doc()  # EX: if opts.buildSafe( sys.argv ): # buildSafe shows usage() on error
+@doc()  # EX:     opts.get('platform', -1)
 class GetOpts:  # {
     __optData = []
     __optLookup = {}
@@ -150,8 +145,31 @@ class GetOpts:  # {
             self.__optVals[opData['long']] = val
 
             # execute any methods associated with this opt
-            if opData['method']:
-                opData['method']( val )
+            # if opData['method']:
+            #    opData['method']( val )
+        # }
+
+        # enforce required opts
+        if self.__hasRequired:  # {
+            for opt in self.__optData:  # {
+                satisfied = True
+                if opt['req']:  # {
+                    satisfied = False
+                    if opt['short'] != "_" and self.__optVals.has_key( opt['short'] ):
+                        satisfied = True
+                    if opt['long'] != "_" and self.__optVals.has_key( opt['long'] ):
+                        satisfied = True
+                # }
+                if not satisfied:
+                    raise Exception( "Required arguments are missing" )
+            # }
+        # }
+
+        for opt in self.__optData:  # {
+            if opt['method']:
+                key = opt['long'] if opt['long'] != "_" else opt['short']
+                if self.__optVals.has_key( key ):
+                    opt['method']( self.__optVals[key] )
         # }
     # }
 
