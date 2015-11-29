@@ -56,6 +56,9 @@ class GetOpts:  # {
     __widest = 0
     __hasRequired = False
     __hasNotRequired = False
+    __optKeys = []
+    __optKeysReq = []
+    __optKeysNotReq = []
 
     def __init__( self ):  # {
         pass
@@ -73,12 +76,24 @@ class GetOpts:  # {
     def add( self, longKey, shortKey=None, opType=None, req=False, desc="", method=None, public=True ):  # {
         sKey = shortKey if shortKey and len( shortKey ) > 0 else "_"
         lKey = longKey if longKey and len( longKey ) > 0 else "_"
+
+        if sKey == "_" and lKey == "_":
+            raise Exception( "long and short arg names cannot both be undefined" )
+
         desc = desc if desc else ""
         opType = opType if opType else ""
         opData = { "short": sKey, "long": lKey, "type": opType, "req": req, "desc": desc, "public": public, "method": method }
         self.__optData.append( opData )
         self.__optLookup[sKey] = opData
         self.__optLookup[lKey] = opData
+
+        key = lKey if lKey != "_" else sKey
+        self.__optKeys.append( key )
+
+        if req:
+            self.__optKeysReq.append( key )
+        else:
+            self.__optKeysNotReq.append( key )
 
         if req:
             self.__hasRequired = True
@@ -150,26 +165,16 @@ class GetOpts:  # {
         # }
 
         # enforce required opts
-        if self.__hasRequired:  # {
-            for opt in self.__optData:  # {
-                satisfied = True
-                if opt['req']:  # {
-                    satisfied = False
-                    if opt['short'] != "_" and self.__optVals.has_key( opt['short'] ):
-                        satisfied = True
-                    if opt['long'] != "_" and self.__optVals.has_key( opt['long'] ):
-                        satisfied = True
-                # }
-                if not satisfied:
-                    raise Exception( "Required arguments are missing" )
-            # }
+        for key in self.__optKeysReq:  # {
+            if not self.__optVals.has_key( key ):
+                raise Exception( "Required arguments are missing" )
         # }
 
-        for opt in self.__optData:  # {
-            if opt['method']:
-                key = opt['long'] if opt['long'] != "_" else opt['short']
-                if self.__optVals.has_key( key ):
-                    opt['method']( self.__optVals[key] )
+        # call delegates
+        for key in self.__optKeys:  # {
+            opt = self.__optLookup[key]
+            if opt['method'] and self.__optVals.has_key( key ):
+                opt['method']( self.__optVals[key] )
         # }
     # }
 
