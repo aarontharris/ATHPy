@@ -6,17 +6,24 @@ import getopt
 import ATHPy
 from ATHPy import GetOpts
 
-opts = GetOpts()
-try:  # {
+def main():  # {
+    opts = GetOpts()
     opts.addDescription( "Blah" )
-    opts.add( "platform", "p", "string", "Which platform are we installing on" )
-    opts.build( sys.argv )
-    aaron = opts.get( 'aaron', 0 )
-    print "aaron got '%s'" % aaron
-except Exception as e:
-    # logging.exception( e )
-    print "Invalid Usage: %s\n" % str( e )
-    print opts.usage()
+    opts.addDescription( "Blah2" )
+    opts.add( "platform", "p", "string", "Which platform are we installing on", method=handlePlatform )
+    opts.add( "test", "t", None, "testing 123", method=handleTest )
+
+    if opts.buildSafe( sys.argv ):  # {
+        platform = opts.get( 'platform', 0 )
+        print "platform got '%s'" % platform
+    # }
 # }
 
+def handlePlatform( val ):
+    print "Got %s" % val
 
+def handleTest( val ):
+    print "Got %s" % val
+
+if __name__ == '__main__':
+    main()

@@ -36,11 +36,28 @@ def doc( *line ):
 
 
 # GetOpts #########################
-class GetOpts:
+@doc()  # Built on getopt but much more convenient
+@doc()  # EX:
+@doc()  # EX: import sys
+@doc()  # EX: from ATHPy import GetOpts
+@doc()  # EX:
+@doc()  # EX: opts = GetOpts()
+@doc()  # EX: opts.add("name", "n", "string", "Person's name")
+@doc()  # EX: opts.add("age", "a", "int", "Person's age", method=handleAge)
+@doc()  # EX: if opts.buildSafe( sys.argv ): # buildSafe shows usage() on error
+@doc()  # EX:     opts.get('platform', -1)
+@doc()  # EX:
+@doc()  # EX: def handleAge( val ):
+@doc()  # EX:     print "Age=%s" % val
+@doc()  # EX:
+@doc()  # EX: if __name__ == '__main__':
+@doc()  # EX:     main()
+@doc()  # EX:
+class GetOpts:  # {
     __optData = []
     __optLookup = {}
     __optVals = {}
-    __description = ""
+    __description = []
     __widest = 0
 
     def __init__( self ):  # {
@@ -53,66 +70,115 @@ class GetOpts:
     @params( opType=str )  # the expected input data type expressed to the user via usage()
     @params( desc=str )  # the option description expressed to the user via usage()
     @params( public=bool )  # Display this option in the usage()
-    def add( self, longKey, shortKey=None, opType=None, desc="", public=True ):  # {
+    @params( method="lambda method" )  # "def methodName( val )" even if opt takes no value. Where val = value entered by the user or None
+    @output( None )
+    def add( self, longKey, shortKey=None, opType=None, desc="", public=True, method=None ):  # {
         sKey = shortKey if shortKey and len( shortKey ) > 0 else "_"
         lKey = longKey if longKey and len( longKey ) > 0 else "_"
         desc = desc if desc else ""
         opType = opType if opType else ""
-        opData = { "short": sKey, "long": lKey, "type": opType, "desc": desc, "public": public }
+        opData = { "short": sKey, "long": lKey, "type": opType, "desc": desc, "public": public, "method": method }
         self.__optData.append( opData )
         self.__optLookup[sKey] = opData
         self.__optLookup[lKey] = opData
     # }
 
+    @doc()  # Must be called before build() or buildSafe()
+    @doc()  # The given description appears at the top of the usage
+    @doc()  # Multiple descriptions can be added, each will appear in order added
     def addDescription( self, description ):
-        self.__description = description
+        self.__description.append( description )
 
+    @doc()  # this or buildSafe() must be called to build and parse GetOpts
     def build( self, argv ):  # {
         shorts = []
         longs = []
+
+        # build our getopt params, short string and long list
+        # also size up the max width needed
         for opt in self.__optData:  # {
+            # prefix the key with ":" or "=" if this opt requires a value
             sKey = opt['short']
             lKey = opt['long']
             if opt['type']:
                 sKey = sKey + ":"
                 lKey = lKey + "="
+
+            # add to the short and long lists
             shorts.append( sKey )
             longs.append( lKey )
 
-            sWide = len( sKey ) + len( opt['type'] ) + 5
-            lWide = len( lKey ) + len( opt['type'] ) + 5
+            # size up the max width needed
+            padding = 5
+            sWide = len( sKey ) + len( opt['type'] ) + padding
+            lWide = len( lKey ) + len( opt['type'] ) + padding
             if sWide > self.__widest:
                 self.__widest = sWide
             if lWide > self.__widest:
                 self.__widest = lWide
         # }
 
+        # parse
         opts, remainder = getopt.getopt( sys.argv[1:], "".join( shorts ), longs )  # @UnusedVariable
 
+        # process the opt pairs
         for pair in opts:  # {
             key = str( pair[0] )
             val = str( pair[1] )
+
+            # strip off leading - or --
             if key.startswith( "--" ):
                 key = key[2:]
             else:
                 key = key[1:]
+
+            # ignore proprietary "empty" token
             if "_" == key:
                 continue
-            print "'%s'=>'%s'" % ( key, val )
+
+            # associate value to both long and short key for generic access
             opData = self.__optLookup[key]
             self.__optVals[opData['short']] = val
             self.__optVals[opData['long']] = val
+
+            # execute any methods associated with this opt
+            if opData['method']:
+                opData['method']( val )
         # }
     # }
 
+    @doc()  # exactly like build() except if anything goes wrong it automatically shows usage()
+    @params( argv=list )  # generally sys.argv
+    @output( bool )  # true if everything went well, false if there was an arg parse problem
+    def buildSafe( self, argv ):  # {
+        try:  # {
+            self.build( sys.argv )
+            return True
+        except Exception as e:
+            # logging.exception( e )
+            print "Invalid Usage: %s\n" % str( e )
+            print self.usage()
+            return False
+        # }
+    # }
+
+    @doc()  # get a value by key if it was entered by the user else defaultValue
+    @params( key=str )  # the short or long opt name without the leading "-" or "--"
+    @params( defaultValue="any" )  # the value you will be given if the key is not found
     def get( self, key, defaultValue=None ):  # {
         if self.__optVals.has_key( key ):
             return self.__optVals[key]
         return defaultValue
     # }
 
+    @doc()  # you may call this directly or it will be called for you via buildSafe().
+    @doc()  # Auto-generated usage based on the opts you configured via add()
     def usage( self ):  # {
-        out = ( self.__description + "\n" ) if self.__description else ""
+        out = ""
+
+        for desc in self.__description:
+            out += ( desc + "\n" ) if desc else ""
+
         for opt in self.__optData:  # {
             if not opt['public']:
                 continue
@@ -133,6 +199,7 @@ class GetOpts:
         # }
         return out
     # }
+# }
 
 
 # DirUtl #########################
