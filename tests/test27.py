@@ -14,6 +14,8 @@ from ATHPy import StrUtl
 
 import sys
 
+# Python lib path
+print '\n'.join( sys.path )
 
 def method1():
     print( "method1" )
@@ -36,9 +38,14 @@ shape.setColor( "red", True, False, params="reversed" )  # set to "red", False, 
 print ( shape.describe() )
 
 
+# testing equality
+string1 = str( "a" )
+string2 = "a";
+print ( "'%s' is '%s' = '%s' vs '%s'" % ( string1, string2, ( string1 is string2 ), ( string1 == string2 ) ) );
+
 
 # system call
-call( ["ls", "-l"] )
+call( ["ls", "-l", ".."] )
 
 # dictionaries
 dictionary = {

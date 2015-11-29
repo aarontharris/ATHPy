@@ -4,8 +4,10 @@
 
 import logging
 import os
-import re
 import subprocess
+import getopt
+import sys
+from sys import platform as _platform
 
 
 
@@ -26,11 +28,111 @@ def throws( typ ):
     def annotate( function ):
         return function
     return annotate
-def doc( line ):
+def doc( *line ):
     def annotate( function ):
         return function
     return annotate
 
+
+
+# GetOpts #########################
+class GetOpts:
+    __optData = []
+    __optLookup = {}
+    __optVals = {}
+    __description = ""
+    __widest = 0
+
+    def __init__( self ):  # {
+        pass
+    # }
+
+    @doc()  # add accepted options
+    @params( longKey=str )  # the option in long form --optionName
+    @params( shortKey=str )  # the option in short form -o
+    @params( opType=str )  # the expected input data type expressed to the user via usage()
+    @params( desc=str )  # the option description expressed to the user via usage()
+    @params( public=bool )  # Display this option in the usage()
+    def add( self, longKey, shortKey=None, opType=None, desc="", public=True ):  # {
+        sKey = shortKey if shortKey and len( shortKey ) > 0 else "_"
+        lKey = longKey if longKey and len( longKey ) > 0 else "_"
+        desc = desc if desc else ""
+        opType = opType if opType else ""
+        opData = { "short": sKey, "long": lKey, "type": opType, "desc": desc, "public": public }
+        self.__optData.append( opData )
+        self.__optLookup[sKey] = opData
+        self.__optLookup[lKey] = opData
+    # }
+
+    def addDescription( self, description ):
+        self.__description = description
+
+    def build( self, argv ):  # {
+        shorts = []
+        longs = []
+        for opt in self.__optData:  # {
+            sKey = opt['short']
+            lKey = opt['long']
+            if opt['type']:
+                sKey = sKey + ":"
+                lKey = lKey + "="
+            shorts.append( sKey )
+            longs.append( lKey )
+
+            sWide = len( sKey ) + len( opt['type'] ) + 5
+            lWide = len( lKey ) + len( opt['type'] ) + 5
+            if sWide > self.__widest:
+                self.__widest = sWide
+            if lWide > self.__widest:
+                self.__widest = lWide
+        # }
+
+        opts, remainder = getopt.getopt( sys.argv[1:], "".join( shorts ), longs )  # @UnusedVariable
+
+        for pair in opts:  # {
+            key = str( pair[0] )
+            val = str( pair[1] )
+            if key.startswith( "--" ):
+                key = key[2:]
+            else:
+                key = key[1:]
+            if "_" == key:
+                continue
+            print "'%s'=>'%s'" % ( key, val )
+            opData = self.__optLookup[key]
+            self.__optVals[opData['short']] = val
+            self.__optVals[opData['long']] = val
+        # }
+    # }
+
+    def get( self, key, defaultValue=None ):  # {
+        if self.__optVals.has_key( key ):
+            return self.__optVals[key]
+        return defaultValue
+    # }
+
+    def usage( self ):  # {
+        out = ( self.__description + "\n" ) if self.__description else ""
+        for opt in self.__optData:  # {
+            if not opt['public']:
+                continue
+
+            if opt['long'] != "_":
+                optName = opt['long']
+                optName += ( "=<" + opt['type'] + ">" ) if opt['type'] else ""
+                outLong = ( "--%-" + str( self.__widest ) + "s%s\n" ) % ( optName, opt['desc'] )
+                out += outLong
+
+            if opt['short'] != "_":
+                optName = opt['short']
+                optName += ( " <" + opt['type'] + ">" ) if opt['type'] else ""
+                desc = ( "Short for: --%s" % opt['long'] ) if opt['long'] and opt['long'] != "_" else opt['desc']
+                outShort = ( " -%-" + str( self.__widest ) + "s%s\n" ) % ( optName, desc )
+                out += outShort
+
+        # }
+        return out
+    # }
 
 
 # DirUtl #########################
@@ -40,24 +142,24 @@ class DirUtl:
     def __init__( self ):
         pass
 
-    @doc  # Change to the given path and push the current working directory onto the stack
+    @doc()  # Change to the given path and push the current working directory onto the stack
     @params( path=str )
     def pushDir( self, path ):
         self.__cwd.append( os.getcwd() )
         self.chdir( path )
 
-    @doc  # Pop the last path off the stack and change to it. return the popped path, may be None if stack was empty
+    @doc()  # Pop the last path off the stack and change to it. return the popped path, may be None if stack was empty
     @output( str )  # or None if not found
     def popDir( self ):
         try:
             path = self.__cwd.pop()
             self.chdir( path )
             return path
-        except Exception as e:
+        except Exception as e:  # @UnusedVariable
             logging.exception( "dir stack is empty" )
             return None
 
-    @doc  # Get the current working directory"""
+    @doc()  # Get the current working directory"""
     @output( str )
     def getCwd( self ):
         return os.getcwd()
@@ -103,6 +205,10 @@ class StrUtl:
     #        __INSTANCE__ = StrUtl()
     #    return __INSTANCE__
 
+    @staticmethod
+    def empty():
+        return "";
+
     def __init__( self ):
         pass
 
@@ -112,6 +218,7 @@ class StrUtl:
     def parseNumeric( value ):
         pass
 
+    @doc()  # true if the given value isinstance of basestring
     @staticmethod
     def isString( value ):
         return isinstance( value, basestring )
@@ -142,6 +249,12 @@ class StrUtl:
         return isinstance( value, long )
 
     @staticmethod
+    def join( delim, joinlist ):  # {
+        d = str( delim if delim else "" )
+        return d.join( joinlist )
+    # }
+
+    @staticmethod
     def findMatchingSymbol( string, leftSymbol, rightSymbol ):
         try:
             """
@@ -169,13 +282,39 @@ class StrUtl:
                     break
 
             return pos
-        except Exception as e:
+        except Exception as e:  # @UnusedVariable
             return -1
 
 
 
 # EnvUtl #########################
 class EnvUtl:
+
+    @staticmethod
+    def isLinux():
+        return _platform == "linux" or _platform == "linux2"
+
+    @staticmethod
+    def isDarwin():
+        return _platform == "darwin"
+
+    @staticmethod
+    def isCygwin():
+        return _platform == "cygwin"
+
+    @staticmethod
+    def isWin32():
+        return _platform == "win32"
+
+    @doc()  # Currently: Linux or Darwin
+    @staticmethod
+    def isUnixLike():
+        return EnvUtl.isLinux() or EnvUtl.isDarwin()
+
+    @staticmethod
+    def isWin32OrCygwin():
+        return EnvUtl.isWin32() or EnvUtl.isCygwin()
+
     @staticmethod
     def getEnv( key, defaultVal=None ):
         return os.environ.get( key, defaultVal )
@@ -188,14 +327,11 @@ class EnvUtl:
         return val
 
     @staticmethod
-    def execute( cmd ): #{
-        #proc = subprocess.Popen(["cat", "/etc/services"], stdout=subprocess.PIPE, shell=True)
-        #(out, err) = proc.communicate()
-        #print "program output:", out
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
-        (out, err) = proc.communicate()
+    def execute( cmd ):  # {
+        proc = subprocess.Popen( cmd, stdout=subprocess.PIPE, shell=True )
+        ( out, err ) = proc.communicate()  # @UnusedVariable
         return out
-    #}
+    # }
 
 
 
@@ -209,4 +345,35 @@ class JsonUtl:
             return False
         return True
 
+
+# MavenDescriptor #########################
+class MavenDescriptor:
+    __groupId = None;
+    __artifact = None;
+    __version = None;
+    __packaging = None;
+
+    def __init__( self, groupId, artifactId, version, packaging='jar' ):  # {
+        self.__groupId = groupId;
+        self.__artifact = artifactId;
+        self.__version = version;
+        self.__packaging = packaging;
+    # }
+
+"""
+my $groupId = 'com.leap12.databuddy';
+my $artifact = 'DataBuddy';
+my $version = '0.0.1-SNAPSHOT';
+my $packaging = 'jar';
+my $pathToFile = `ls target/DataBuddy*.jar`;
+chomp($pathToFile);
+
+#mvn install:install-file -Dfile=<path-to-file> -DgroupId=<group-id> -DartifactId=<artifact-id> -Dversion=<version> -Dpackaging=<packaging>
+my $cmd = sprintf( "mvn install:install-file -Dfile=%s -DgroupId=%s -DartifactId=%s -Dversion=%s -Dpackaging=%s",
+            $pathToFile, $groupId, $artifact, $version, $packaging
+            );
+
+#print $cmd . "\n";
+system( $cmd );
+"""
 
