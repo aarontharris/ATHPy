@@ -2,7 +2,7 @@
 Python bits I don't care to write again
 
 # How to use it
-<b>Option 1: ./install.py</b>
+<b>Option 1: ./install.py</b> (Recommended)
 
 Clone the project, navigate to ATHPy, run "./install.py" and it will move the ATHPy.pyc do your local site-packages or dist-packages folder in Python's path.
 
