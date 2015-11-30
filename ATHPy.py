@@ -39,7 +39,7 @@ def doc( *line ):
 class Log:  # {
     @staticmethod
     def __msg( msg, _error=False, _newline=True ):  # {
-        writeMe = msg
+        writeMe = str( msg )
         if _newline:
             writeMe += "\n"
         if _error:
@@ -219,12 +219,11 @@ class GetOpts:  # {
         try:  # {
             self.build( sys.argv )
             return True
-        except Exception as e:
-            # logging.exception( e )
-            print "Invalid Usage: %s\n" % str( e ).rstrip()
+        except Exception as err:
+            print "Invalid Usage: %s\n" % str( err ).rstrip()
             print self.usage()
-            return False
         # }
+        return False
     # }
 
     @doc()  # get a value by key if it was entered by the user else defaultValue
@@ -232,19 +231,21 @@ class GetOpts:  # {
     @params( defaultValue="any" )  # the value you will be given if the key is not found
     @output( "varies" )  # True for opType=None opts that are present, else the value entered by the user
     def get( self, key, defaultValue=None ):  # {
-        if key == "_":
-            return defaultValue
-        if self.__optVals.has_key( key ):  # {
-            out = self.__optVals[key]
-            if not out:  # {
+        out = defaultValue
+        try:  # {
+            if key != "_":  # {
                 if self.__optLookup[key]['type']:
-                    out = True
+                    if self.__optVals.has_key( key ):
+                        out = self.__optVals[key]
                 else:
-                    out = False
+                    out = self.__optVals.has_key( key )
+                    if self.__optVals[key]:
+                        out = self.__optVals[key]
             # }
-            return out
+        except Exception as err:
+            pass
         # }
-        return defaultValue
+        return out
     # }
 
     @doc()  # you may call this directly or it will be called for you via buildSafe().
@@ -353,8 +354,11 @@ class DirUtl:  # {
 
     @staticmethod
     def copyFile( srcFile, dstFolder ):  # {
-        if DirUtl.exists( srcFile ) and DirUtl.exists( dstFolder ):
-            shutil.copy( srcFile, dstFolder )
+        if not DirUtl.exists( srcFile ):
+            raise IOError( "ERROR: srcFile '%s' does not exist" % srcFile )
+        if not DirUtl.exists( dstFolder ):
+            raise IOError( "ERROR: dstFolder '%s' does not exist" % dstFolder )
+        shutil.copy( srcFile, dstFolder )
     # }
 # }
 
