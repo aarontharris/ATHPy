@@ -82,16 +82,16 @@ class Log:  # {
 @doc()  # EX: if opts.buildSafe( sys.argv ): # buildSafe shows usage() on error
 @doc()  # EX:     opts.get('platform', -1)
 class GetOpts:  # {
-    __optData = []
-    __optLookup = {}
-    __optVals = {}
-    __description = []
-    __widest = 0
-    __hasRequired = False
-    __hasNotRequired = False
-    __optKeys = []
-    __optKeysReq = []
-    __optKeysNotReq = []
+    __optData = []  # list of dictionaries, each dict is parameters for each opt
+    __optLookup = {}  # map from the opt key -> optData
+    __optVals = {}  # map from opt key -> opt value input from user
+    __description = []  # list of description lines entered via addDescription()
+    __widest = 0  # widest usage output line
+    __hasRequired = False  # at least one opt is set as req=True
+    __hasNotRequired = False  # at least one opt is set as req=False
+    __optKeys = []  # list of keys for each opt, longKey if available otherwise shortKey -- does not contain both
+    __optKeysReq = []  # list of required keys
+    __optKeysNotReq = []  # list of not required keys
 
     def __init__( self ):  # {
         pass
@@ -104,7 +104,7 @@ class GetOpts:  # {
     @params( req=bool )  # True if required else False or None
     @params( desc=str )  # the option description expressed to the user via usage()
     @params( public=bool )  # Display this option in the usage()
-    @params( method="lambda method" )  # "def methodName( val )" even if opt takes no value. Where val = value entered by the user or None
+    @params( method="lambda method" )  # "def methodName( val )" even if opt takes no value. Where val = value entered by the user or None.  If methodName( val ) returns anything other than None, that value will substitute the original value upon future calls to get() for that key.
     @output( None )
     def add( self, longKey, shortKey=None, opType=None, req=False, desc="", method=None, public=True ):  # {
         sKey = shortKey if shortKey and len( shortKey ) > 0 else "_"
@@ -191,10 +191,6 @@ class GetOpts:  # {
             opData = self.__optLookup[key]
             self.__optVals[opData['short']] = val
             self.__optVals[opData['long']] = val
-
-            # execute any methods associated with this opt
-            # if opData['method']:
-            #    opData['method']( val )
         # }
 
         # enforce required opts
@@ -205,9 +201,14 @@ class GetOpts:  # {
 
         # call delegates
         for key in self.__optKeys:  # {
-            opt = self.__optLookup[key]
-            if opt['method'] and self.__optVals.has_key( key ):
-                opt['method']( self.__optVals[key] )
+            opData = self.__optLookup[key]
+            if opData['method'] and self.__optVals.has_key( key ):  # {
+                rval = opData['method']( self.get( key ) )
+                if rval != None:  # {
+                    self.__optVals[opData['short']] = rval
+                    self.__optVals[opData['long']] = rval
+                # }
+            # }
         # }
     # }
 
@@ -229,9 +230,20 @@ class GetOpts:  # {
     @doc()  # get a value by key if it was entered by the user else defaultValue
     @params( key=str )  # the short or long opt name without the leading "-" or "--"
     @params( defaultValue="any" )  # the value you will be given if the key is not found
+    @output( "varies" )  # True for opType=None opts that are present, else the value entered by the user
     def get( self, key, defaultValue=None ):  # {
-        if self.__optVals.has_key( key ):
-            return self.__optVals[key]
+        if key == "_":
+            return defaultValue
+        if self.__optVals.has_key( key ):  # {
+            out = self.__optVals[key]
+            if not out:  # {
+                if self.__optLookup[key]['type']:
+                    out = True
+                else:
+                    out = False
+            # }
+            return out
+        # }
         return defaultValue
     # }
 
