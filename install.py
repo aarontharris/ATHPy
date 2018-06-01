@@ -11,7 +11,7 @@ def main():  # {
     opts.addDescription( "You may override the path with --path=/path/to/install" )
     opts.addDescription( "\n** Note: Make sure you have permission to the destination path, consider sudo ./install.py" )
 
-    opts.add( "path", "p", "string", False, "Override the default path" )
+    opts.add( "path", "p", "THEPATH", False, "Override the default path" )
     opts.add( "where", "w", None, False, "Display the actual default path", method=handleWhere )
     opts.add( "help", "h", None, False, "Display Usage", method=handleHelp )
 

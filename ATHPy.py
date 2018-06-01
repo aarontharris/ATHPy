@@ -7,6 +7,7 @@ import logging
 import os
 import subprocess
 import getopt
+#import re # Regular Expression
 import sys
 from sys import platform as _platform
 
@@ -35,7 +36,7 @@ def doc( *line ):
     return annotate
 
 
-# GetOpts #########################
+# Log #########################
 class Log:  # {
     @staticmethod
     def __msg( msg, _error=False, _newline=True ):  # {
@@ -376,7 +377,7 @@ class StrUtl:
 
     @staticmethod
     def empty():
-        return "";
+        return ""
 
     def __init__( self ):
         pass
@@ -539,36 +540,20 @@ class FileUtl: # {
         return lines
 # }
 
-# Regx #########################
-class Regx: # {
-    @staticmethod
-    def replace( pattern, input, replace ): # {
-        return Regx.__replace(pattern, input, replace, None)
-    # }
 
-    @staticmethod
-    def replaceDelegate( pattern, input, delegate ): # {
-        return Regx.__replace(pattern, input, None, delegate)
-    # }
-
-    @staticmethod
-    def __replace( pattern, input, replace=None, delegate=None ): # {
-        delegate( "blah" )
-    # } replace()
-# } Regx
 
 # MavenDescriptor #########################
 class MavenDescriptor:
-    __groupId = None;
-    __artifact = None;
-    __version = None;
-    __packaging = None;
+    __groupId = None
+    __artifact = None
+    __version = None
+    __packaging = None
 
     def __init__( self, groupId, artifactId, version, packaging='jar' ):  # {
-        self.__groupId = groupId;
-        self.__artifact = artifactId;
-        self.__version = version;
-        self.__packaging = packaging;
+        self.__groupId = groupId
+        self.__artifact = artifactId
+        self.__version = version
+        self.__packaging = packaging
     # }
 
 """
@@ -588,3 +573,4 @@ my $cmd = sprintf( "mvn install:install-file -Dfile=%s -DgroupId=%s -DartifactId
 system( $cmd );
 """
 
+if __name__ == "__main__": pass

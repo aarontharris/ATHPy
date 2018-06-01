@@ -3,10 +3,12 @@
 # For more info see: https://regexone.com/references/python
 
 import imports_standardized as imps
-
 import re # Regular Expression
+from ATHPy import StrUtl
+from ATHPy import GetOpts
 
-from ATHPy import Regx
+from ATBox import Box
+from ATHRegx import Regx
 
 def basicRegex(): # {
     regex = "[A-Za-z]+"
@@ -108,6 +110,7 @@ def searchAndReplaceRegexMultilineAdvanced(): # {
     print output
 # }
 
+
 def searchAndReplaceSimplified(): # {
     input = "Hello my name is Bob"
     input += "\n"
@@ -117,12 +120,48 @@ def searchAndReplaceSimplified(): # {
     input += "\n"
     input += "We are Bob"
 
-    inc = 0
-    Regx.replace( r"Bob", input, searchAndReplaceSimplifiedSearchResultDelegate )
+    rx = Regx(input)
+    # Super simple
+    print "---"
+    print rx.replace(r"(Bob)", "Joe")
+    print "---"
+    
+    # Customizable via delegate
+    print "---"
+    print rx.replaceDelegate(r"(Bob)", searchAndReplaceSimplifiedSearchResultDelegate)
+    print "---"
+
 # }
 
-def searchAndReplaceSimplifiedSearchResultDelegate(): # {
-    return
+# Delegate receives a ATHRegx.Match object
+# which contains a re.Match + some additional useful bits
+# the returned value is what gets substituded for this particular match
+def searchAndReplaceSimplifiedSearchResultDelegate( match ): # {
+    return "_" + match.match.group(0) + "_" + `match.idx` + "_"
+# }
+
+
+def test(): # {
+    if ( StrUtl.isFloatString("123") ):
+        print "Yes"
+    else:
+        print "No"
+# }
+
+def testBox(): # {
+    box = Box(2,3)
+    box.describe()
+# }
+
+def opts(): # {
+    opts = GetOpts()
+    opts.addDescription("Description")
+
+    opts.add("path", "p", "THEPATH", False, "path description")
+
+    if ( opts.buildSafe( None ) ): # {
+        print opts.get("path", "empty")
+    # }
 # }
 
 def __main(): # {
@@ -134,6 +173,10 @@ def __main(): # {
     finditerRegexAdvanced()
     searchAndReplaceRegexMultiline()
     searchAndReplaceRegexMultilineAdvanced()
+    searchAndReplaceSimplified()
+    test()
+    opts()
+    testBox()
 # }
 
 if __name__ == '__main__': __main()
