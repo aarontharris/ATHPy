@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from ATHPy import *  # @UnusedWildImport
+from ATHPy import *  # @UnusedWildImport compiles ATHPy.py
 
 # Global
 opts = GetOpts()

@@ -69,6 +69,7 @@ class Log:  # {
 # }
 
 # GetOpts #########################
+@doc()  # $> cmd --option_name1 --option_name_2 etc
 @doc()  # Built on getopt but much more convenient
 @doc()  # EX: import sys
 @doc()  # EX: from ATHPy import GetOpts
@@ -92,6 +93,7 @@ class GetOpts:  # {
     __optKeys = []  # list of keys for each opt, longKey if available otherwise shortKey -- does not contain both
     __optKeysReq = []  # list of required keys
     __optKeysNotReq = []  # list of not required keys
+    __delegatesCalled = 0
 
     def __init__( self ):  # {
         pass
@@ -189,7 +191,7 @@ class GetOpts:  # {
 
             # associate value to both long and short key for generic access
             opData = self.__optLookup[key]
-            self.__optVals[opData['short']] = val
+            self.__optVals[opData['short']] = val # FIXME this is silly
             self.__optVals[opData['long']] = val
         # }
 
@@ -205,8 +207,8 @@ class GetOpts:  # {
             if opData['method'] and self.__optVals.has_key( key ):  # {
                 rval = opData['method']( self.get( key ) )
                 if rval != None:  # {
-                    self.__optVals[opData['short']] = rval
-                    self.__optVals[opData['long']] = rval
+                    self.__optVals[opData['short']] = rval # FIXME this is silly
+                    self.__optVals[opData['long']] = rval 
                 # }
             # }
         # }
@@ -520,12 +522,40 @@ class EnvUtl:  # {
 class JsonUtl:
     @staticmethod
     def __needsQuotes( value ):
-        if StrUtl.get().isNumberString( value ):
+        if StrUtl.isNumberString( value ):
             return False
-        if StrUtl.get().isString( value ) and ( value == "true" or value == "false" ) :
+        if StrUtl.isString( value ) and ( value == "true" or value == "false" ) :
             return False
         return True
 
+
+
+# FileUtl #########################
+class FileUtl: # {
+    @staticmethod
+    def readAllLinesIntoArray( filepath ):
+        with open( filepath ) as fh:
+            lines = fh.readlines()
+        return lines
+# }
+
+# Regx #########################
+class Regx: # {
+    @staticmethod
+    def replace( pattern, input, replace ): # {
+        return Regx.__replace(pattern, input, replace, None)
+    # }
+
+    @staticmethod
+    def replaceDelegate( pattern, input, delegate ): # {
+        return Regx.__replace(pattern, input, None, delegate)
+    # }
+
+    @staticmethod
+    def __replace( pattern, input, replace=None, delegate=None ): # {
+        delegate( "blah" )
+    # } replace()
+# } Regx
 
 # MavenDescriptor #########################
 class MavenDescriptor:
