@@ -9,6 +9,8 @@ import subprocess
 import getopt
 #import re # Regular Expression
 import sys
+import re
+import __main__ as main
 from sys import platform as _platform
 
 
@@ -291,8 +293,25 @@ class GetOpts:  # {
             # }
         # }
         return out
+    # } usage
+
+    @staticmethod
+    def usagePrintBlock(): # {
+        filepath = main.__file__
+        with open( filepath ) as fh:
+            line = fh.readline
+            inblock = False
+            while ( line ):
+                line = fh.readline()
+                if ( StrUtl.containsci( "<USAGE>", line ) ):
+                    inblock = True
+                    continue
+                if ( StrUtl.containsci( "</USAGE>", line ) ):
+                    inblock = False
+                    return
+                if inblock: print line.rstrip()
     # }
-# }
+# } GetOpts
 
 
 # DirUtl #########################
@@ -381,6 +400,42 @@ class StrUtl:
 
     def __init__( self ):
         pass
+
+    @doc()  # See also: string.rstrip() or string.lstrip() to remove all whitespace from ends
+    @staticmethod
+    def chomp( string ):
+        if string:
+            if string.endswith('\n'):
+                return string[:-1]
+            if string.endswith('\r\n'):
+                return string[:-2]
+        return string
+
+    @staticmethod
+    def contains( pattern, string ): # {
+        if ( string ):
+            return re.search( pattern, string )
+        return False
+    # }
+
+    @staticmethod
+    def containsci( pattern, string ): # {
+        if ( string ):
+            return re.search( pattern, string, re.IGNORECASE )
+        return False
+    # }
+
+    @doc()  # static nullsafe version of string.lstrip()
+    @staticmethod
+    def lstrip( string ):
+        if string: return string.lstrip()
+        return string
+
+    @doc()  # static nullsafe version of string.rstrip()
+    @staticmethod
+    def rstrip( string ):
+        if string: return string.rstrip()
+        return string
 
     @params( value=str )  # value to be parsed
     @output( None )
