@@ -4,8 +4,7 @@
 import os,sys 
 
 # lib path IS shared with scripts that iport this script
-lib_path = os.path.abspath("../")
-sys.path.append( lib_path )
+sys.path.append( os.environ.get( "ATHPYDIR", "../ATHPy/" ) )
 
 from ATHPy import StrUtl # these are not shared in the scripts that import this script
 

@@ -59,10 +59,10 @@ class Log:  # {
     @staticmethod
     def e( *obj ):  # {
         for o in obj:
-            if isinstance( o, basestring ):
-                Log.__msg( o, _error=True, _newline=True )
             if isinstance( o, Exception ):
                 logging.exception( o )
+            else: # if isinstance( o, basestring ):
+                Log.__msg( o, _error=True, _newline=True )
     # }
 
     @staticmethod
@@ -394,12 +394,58 @@ class StrUtl:
     #        __INSTANCE__ = StrUtl()
     #    return __INSTANCE__
 
+    def __init__( self ):
+        pass
+
     @staticmethod
     def empty():
         return ""
 
-    def __init__( self ):
-        pass
+    @staticmethod
+    def startsWith( string, value ):
+        if ( string is None ): return False
+        return string.startswith( value )
+    
+    @doc() # Return the number of times $value occurs at the beginning of $string
+    @staticmethod
+    def startsWithCount( string, value ):
+        count = 0
+        start = 0
+        end = len(string)
+        vlen = len(value)
+        while ( start+vlen <= end and string[start:start+vlen] == value ):
+            count += 1
+            start += vlen
+        return count
+
+    @staticmethod
+    def substrto( string, pattern, start=0, end=-1 ): # {
+        if ( end == -1 ): end = len(string)
+        index = string.find( pattern, start, end )
+        if ( index >= 0 ):
+            return string[start:index]
+        return None
+    # }
+
+    @staticmethod
+    def repeat( string, times ): # {
+        out = ''
+        for i in range(times):
+            out = out + string
+        return out
+    # }
+
+    @staticmethod
+    def toLower( string ):
+        if string:
+            return string.lower()
+        return None
+
+    @staticmethod
+    def toUpper( string ):
+        if string:
+            return string.upper()
+        return None
 
     @doc()  # See also: string.rstrip() or string.lstrip() to remove all whitespace from ends
     @staticmethod
@@ -584,7 +630,54 @@ class JsonUtl:
             return False
         return True
 
+class FileReader: # {
+    __filepath = ''
+    __lineNo = 0
+    __callback = None
+    __line = None
+    __state = None
+    __stop = False
 
+    @doc()  # Read a file line by line and process the line in the given callback
+    @params( filepath=str )  # the path to the file to read, arg1 passed to the callback
+    @params( callback="lambda")  # "bool callback( FileReader )" called for each line. True=continue, False=stop reading file.
+    def __init__( self, filepath, callback ): # {
+        self.__filepath = filepath
+        self.__callback = callback
+        self.__state = dict()
+        pass
+    # }
+
+    @doc() # Stop the line by line read
+    @doc() # odd but we do this for better lambda compat
+    def stop( self ): # {
+        __stop = True
+    # }
+
+    def readLineByLine( self ): # {
+        self.__stop = False
+        self.__lineNo = 0
+        with open( self.__filepath ) as fh:
+            self.__line = fh.readline()
+            while self.__line:
+                self.__lineNo += 1
+                self.__line = StrUtl.rstrip(self.__line)
+                self.__callback( self )
+                if self.__stop: break
+                self.__line = fh.readline()
+    # }
+
+    @doc() # mutable dictionary for keeping state during traversals
+    def getState( self, key, defaultVal=None ):
+        return self.__state.get(key, defaultVal)
+
+    def setState( self, key, value ):
+        self.__state[key]=value
+        return self
+
+    def getLineNo( self ): return self.__lineNo
+    def getLine( self ): return self.__line
+# }
 
 # FileUtl #########################
 class FileUtl: # {
@@ -593,6 +686,23 @@ class FileUtl: # {
         with open( filepath ) as fh:
             lines = fh.readlines()
         return lines
+
+    @doc()  # Read a file line by line and process the line in the given callback
+    @params( filepath=str )  # the path to the file to read, arg1 passed to the callback
+    @params( method="method")  # "def methodName( filepath, state, line )" called for each line
+    @params( state=object )  # an optional state object passed to the callback for each line
+    @output( None )
+    @staticmethod
+    def readLineByLine( filepath, methodLine, state=None ): # {
+        lineNo = 0
+        with open( filepath ) as fh:
+            line = fh.readline()
+            while line:
+                lineNo += 1
+                line = StrUtl.rstrip(line)
+                methodLine( filepath, line, state )
+                line = fh.readline()
+    # }
 # }
 
 

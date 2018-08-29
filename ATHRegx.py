@@ -6,7 +6,11 @@ class Regx: # {
     __input = ''
 
     def __init__( self, input ): # {
-        self.__matchNumber = 0
+        self.recycle( input )
+    # }
+
+    def recycle( self, input ): # {
+        self.matchNumber = 0
         self.__input = input
     # }
 
@@ -26,6 +30,7 @@ class Regx: # {
                 output += input[lastPos:m.start()]
                 output += replace
                 lastPos = m.start() + len(m.group(0))
+        output += input[lastPos:len(input)]
         return output
     # }
 
