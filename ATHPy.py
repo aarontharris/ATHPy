@@ -402,6 +402,12 @@ class StrUtl:
         return ""
 
     @staticmethod
+    def isEmpty( string ):
+        if ( string is None ): return True
+        if ( len(string) == 0 ): return True
+        return False
+
+    @staticmethod
     def startsWith( string, value ):
         if ( string is None ): return False
         return string.startswith( value )
@@ -681,6 +687,14 @@ class FileReader: # {
 
 # FileUtl #########################
 class FileUtl: # {
+
+    @staticmethod
+    def writelines( filepath, lines ): # {
+        with open( filepath, 'w' ) as fh:
+            for line in lines:
+                fh.write(line + "\n")
+    # }
+
     @staticmethod
     def readAllLinesIntoArray( filepath ):
         with open( filepath ) as fh:
@@ -704,8 +718,6 @@ class FileUtl: # {
                 line = fh.readline()
     # }
 # }
-
-
 
 # MavenDescriptor #########################
 class MavenDescriptor:
