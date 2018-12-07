@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from ATHPy import *  # @UnusedWildImport compiles ATHPy.py
+from ATHPy3 import *  # @UnusedWildImport compiles ATHPy3.py
 
 # Global
 opts = GetOpts()
@@ -19,6 +20,7 @@ def main():  # {
         path = opts.get( 'path', EnvUtl.getBestPythonLibDir() )
         try:
             DirUtl.copyFile( "./ATHPy.pyc", path )
+            DirUtl.copyFile( "./ATHPy3.pyc", path )
             Log.d( "Installed to %s" % path )
         except IOError as err:
             Log.eMsg( err )  # likely a permission problem
