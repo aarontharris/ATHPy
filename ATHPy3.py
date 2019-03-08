@@ -71,11 +71,126 @@ class Log:  # {
     # }
 # }
 
+class AthOpts: # {
+    __optDefs = {} # dict<key, dict> of key => argument definitions, key is based on 'long' key
+    __validDefs = ['long','short','type','req','desc','lamda','visible','default']
+    __values = {} # dict<key, value> of key => cmdline argument, key is based on 'long' key
+    __validTypes = ['bool', 'int', 'float', 'string', 'csv']
+
+    def __init__(self): # {
+        pass
+    # }
+
+    @doc() # Overrides if key is already present
+    @doc() # key is based on 'long' if present else 'short'
+    @throws( Exception ) # when 'long' nor 'short' are present
+    def add( self, argDef ): # {
+        self.__validateDef(argDef) # ensures 'long' is present
+        self.__optDefs[argDef['long']] = argDef
+    # }
+
+    @doc() # obtain a value associated with the given 'long' *key* based on default rules
+    @params( key=str ) # based on the 'long' key provided in add()
+    @output( any ) # type depends on type described in the provided argDef in add()
+    def get( self, key ): # {
+        if key in self.__values:
+            return self.__values.get(key)
+        if key not in self.__optDefs:
+            raise Exception("ERR: '%s' - Unrecognized param" % key)
+        argDef = self.__optDefs.get(key)
+        return argDef.get('default', None)
+    # }
+
+    @throws( Exception ) # when invalid
+    def __validateDef( self, argDef ): # {
+        for key in argDef:
+            if key not in self.__validDefs:
+                raise Exception("Invalid argDef param '%s' @ '%s'" % (key, argDef.get('long')))
+
+        if 'long' not in argDef and 'short' not in argDef:
+            raise Exception("ERR: Required argDef 'long' and/or 'short'")
+
+        if 'type' not in argDef:
+            raise Exception("ERR: Required argDef 'type'")
+        typ = argDef.get('type', None)
+        if typ not in self.__validTypes:
+            raise Exception("ERR: '%s' - Unrecognized type @ '%s'" % (typ, key))
+        
+        if 'long' not in argDef:
+            argDef['long'] = argDef['short']
+    # }
+
+    def build( self, sysArgs ): # {
+        for arg in sysArgs[1:]: # {
+            if not arg.startswith('--'):
+                raise Exception("ERR: '%s' - Arguments are preceeded with '--'" % arg)
+
+            arg = arg[2:] # chop off leading '--'
+            key, val = StrUtl.splitFirst(arg, '=')
+
+            if key not in self.__optDefs:
+                raise Exception("ERR: '%s' - Unrecognized param" % key)
+            argDef = self.__optDefs.get(key)
+
+            typ = argDef.get('type')
+            if typ == 'bool':
+                if StrUtl.toLower(val) == 'false':
+                    self.__values[key]=False
+                else:
+                    self.__values[key]=True
+            if typ == 'csv':
+                if val == None:
+                    val = argDef.get('default', None)
+                if val != None:
+                    val = val.split(',')
+                self.__values[key]=val
+            else:
+                if val == None:
+                    val = argDef.get('default', None)
+                self.__values[key]=val
+        # }
+
+        for key in self.__optDefs:
+            argDef = self.__optDefs.get(key)
+            if argDef.get('req', False):
+                if self.__values.get(key, None) == None:
+                    raise Exception("ERR: '%s' - Required param" % key)
+    # }
+
+    @doc()  # exactly like build() except if anything goes wrong it automatically shows usage()
+    @params( argv=list )  # generally sys.argv
+    @output( bool )  # true if everything went well, false if there was an arg parse problem
+    def buildSafe( self, argv ):  # {
+        try:  # {
+            self.build(argv)
+            return True
+        except Exception as err:
+            pass
+            print ("Invalid Usage: %s\n" % str( err ).rstrip())
+            print (self.usage())
+        # }
+        return False
+    # }
+
+    def usage( self ): # {
+        output = "Usage:\n"
+        for key in self.__optDefs:
+            argDef = self.__optDefs.get(key)
+            if not argDef.get('visible', True):
+                continue
+            line = " --%s = [%s] %s\n" % (argDef['long'], argDef['type'], argDef['desc'])
+            output = output + line
+        return output
+    # }
+
+# }
+
 # GetOpts #########################
 @doc()  # $> cmd --option_name1 --option_name_2 etc
 @doc()  # Built on getopt but much more convenient
-@doc()  # EX: import sys
-@doc()  # EX: from ATHPy import GetOpts
+@doc()  # EX: import os, sys
+@doc()  # EX: sys.path.append( os.environ.get( "ATHPYDIR" ) )
+@doc()  # EX: from ATHPy3 import GetOpts
 @doc()  # EX:
 @doc()  # EX: def handleAge( val ):
 @doc()  # EX:     print "Age=%s" % val
@@ -85,7 +200,7 @@ class Log:  # {
 @doc()  # EX: opts.add("age", "a", "int", False, "Person's age", method=handleAge)
 @doc()  # EX: if opts.buildSafe( sys.argv ): # buildSafe shows usage() on error
 @doc()  # EX:     opts.get('platform', -1)
-class GetOpts:  # {
+class XGetOpts:  # {
     __optData = []  # list of dictionaries, each dict is parameters for each opt
     __optLookup = {}  # map from the opt key -> optData
     __optVals = {}  # map from opt key -> opt value input from user
@@ -200,14 +315,14 @@ class GetOpts:  # {
 
         # enforce required opts
         for key in self.__optKeysReq:  # {
-            if not self.__optVals.has_key( key ):
+            if key not in self.__optVals:
                 raise Exception( "Required arguments are missing" )
         # }
 
         # call delegates
         for key in self.__optKeys:  # {
             opData = self.__optLookup[key]
-            if opData['method'] and self.__optVals.has_key( key ):  # {
+            if opData['method'] and key in self.__optVals:  # {
                 rval = opData['method']( self.get( key ) )
                 if rval != None:  # {
                     self.__optVals[opData['short']] = rval # FIXME this is silly
@@ -240,10 +355,10 @@ class GetOpts:  # {
         try:  # {
             if key != "_":  # {
                 if self.__optLookup[key]['type']:
-                    if self.__optVals.has_key( key ):
+                    if key in self.__optVals:
                         out = self.__optVals[key]
                 else:
-                    out = self.__optVals.has_key( key )
+                    out = key in self.__optVals
                     if self.__optVals[key]:
                         out = self.__optVals[key]
             # }
@@ -562,6 +677,16 @@ class StrUtl:
         except Exception as e:  # @UnusedVariable
             return -1
 
+    @staticmethod
+    def splitFirst( string, delimiter ): # {
+        left = string
+        right = None
+        if delimiter in string:
+            idx = string.index(delimiter)
+            left = string[0:idx]
+            right = string[idx+1:]
+        return [left,right]
+    # }
 
 
 # EnvUtl #########################
@@ -605,8 +730,8 @@ class EnvUtl:  # {
     @staticmethod
     def execute( cmd ):  # {
         proc = subprocess.Popen( cmd, stdout=subprocess.PIPE, shell=True )
-        ( out, err ) = proc.communicate()  # @UnusedVariable
-        return out
+        ( out, err ) = proc.communicate() # @UnusedVariable
+        return out.decode('utf-8') # out will be <class 'bytes'> by default -- convert to string
     # }
 
     @doc()  # returns the best dir in python's lib path
