@@ -185,250 +185,6 @@ class AthOpts: # {
 
 # }
 
-# GetOpts #########################
-@doc()  # $> cmd --option_name1 --option_name_2 etc
-@doc()  # Built on getopt but much more convenient
-@doc()  # EX: import os, sys
-@doc()  # EX: sys.path.append( os.environ.get( "ATHPYDIR" ) )
-@doc()  # EX: from ATHPy3 import GetOpts
-@doc()  # EX:
-@doc()  # EX: def handleAge( val ):
-@doc()  # EX:     print "Age=%s" % val
-@doc()  # EX:
-@doc()  # EX: opts = GetOpts()
-@doc()  # EX: opts.add("name", "n", "string", True, "Person's name")
-@doc()  # EX: opts.add("age", "a", "int", False, "Person's age", method=handleAge)
-@doc()  # EX: if opts.buildSafe( sys.argv ): # buildSafe shows usage() on error
-@doc()  # EX:     opts.get('platform', -1)
-class XGetOpts:  # {
-    __optData = []  # list of dictionaries, each dict is parameters for each opt
-    __optLookup = {}  # map from the opt key -> optData
-    __optVals = {}  # map from opt key -> opt value input from user
-    __description = []  # list of description lines entered via addDescription()
-    __widest = 0  # widest usage output line
-    __hasRequired = False  # at least one opt is set as req=True
-    __hasNotRequired = False  # at least one opt is set as req=False
-    __optKeys = []  # list of keys for each opt, longKey if available otherwise shortKey -- does not contain both
-    __optKeysReq = []  # list of required keys
-    __optKeysNotReq = []  # list of not required keys
-    __delegatesCalled = 0
-
-    def __init__( self ):  # {
-        pass
-    # }
-
-    @doc()  # add accepted options
-    @params( longKey=str )  # the option in long form --optionName
-    @params( shortKey=str )  # the option in short form -o
-    @params( opType=str )  # the expected input data type expressed to the user via usage()
-    @params( req=bool )  # True if required else False or None
-    @params( desc=str )  # the option description expressed to the user via usage()
-    @params( public=bool )  # Display this option in the usage()
-    @params( method="lambda method" )  # "def methodName( val )" even if opt takes no value. Where val = value entered by the user or None.  If methodName( val ) returns anything other than None, that value will substitute the original value upon future calls to get() for that key.
-    @output( None )
-    def add( self, longKey, shortKey=None, opType=None, req=False, desc="", method=None, public=True ):  # {
-        sKey = shortKey if shortKey and len( shortKey ) > 0 else "_"
-        lKey = longKey if longKey and len( longKey ) > 0 else "_"
-
-        if sKey == "_" and lKey == "_":
-            raise Exception( "long and short arg names cannot both be undefined" )
-
-        desc = desc if desc else ""
-        opType = opType if opType else ""
-        opData = { "short": sKey, "long": lKey, "type": opType, "req": req, "desc": desc, "public": public, "method": method }
-        self.__optData.append( opData )
-        self.__optLookup[sKey] = opData
-        self.__optLookup[lKey] = opData
-
-        key = lKey if lKey != "_" else sKey
-        self.__optKeys.append( key )
-
-        if req:
-            self.__optKeysReq.append( key )
-        else:
-            self.__optKeysNotReq.append( key )
-
-        if req:
-            self.__hasRequired = True
-        if not req:
-            self.__hasNotRequired = True
-    # }
-
-    @doc()  # Must be called before build() or buildSafe()
-    @doc()  # The given description appears at the top of the usage
-    @doc()  # Multiple descriptions can be added, each will appear in order added
-    def addDescription( self, description ):
-        self.__description.append( description )
-
-    @doc()  # this or buildSafe() must be called to build and parse GetOpts
-    def build( self, argv ):  # {
-        shorts = []
-        longs = []
-
-        # build our getopt params, short string and long list
-        # also size up the max width needed
-        for opt in self.__optData:  # {
-            # prefix the key with ":" or "=" if this opt requires a value
-            sKey = opt['short']
-            lKey = opt['long']
-            if opt['type']:
-                sKey = sKey + ":"
-                lKey = lKey + "="
-
-            # add to the short and long lists
-            shorts.append( sKey )
-            longs.append( lKey )
-
-            # size up the max width needed
-            padding = 5
-            sWide = len( sKey ) + len( opt['type'] ) + padding
-            lWide = len( lKey ) + len( opt['type'] ) + padding
-            if sWide > self.__widest:
-                self.__widest = sWide
-            if lWide > self.__widest:
-                self.__widest = lWide
-        # }
-
-        # parse
-        opts, remainder = getopt.getopt( sys.argv[1:], "".join( shorts ), longs )  # @UnusedVariable
-
-        # process the opt pairs
-        for pair in opts:  # {
-            key = str( pair[0] )
-            val = str( pair[1] )
-
-            # strip off leading - or --
-            if key.startswith( "--" ):
-                key = key[2:]
-            else:
-                key = key[1:]
-
-            # ignore proprietary "empty" token
-            if "_" == key:
-                continue
-
-            # associate value to both long and short key for generic access
-            opData = self.__optLookup[key]
-            self.__optVals[opData['short']] = val # FIXME this is silly
-            self.__optVals[opData['long']] = val
-        # }
-
-        # enforce required opts
-        for key in self.__optKeysReq:  # {
-            if key not in self.__optVals:
-                raise Exception( "Required arguments are missing" )
-        # }
-
-        # call delegates
-        for key in self.__optKeys:  # {
-            opData = self.__optLookup[key]
-            if opData['method'] and key in self.__optVals:  # {
-                rval = opData['method']( self.get( key ) )
-                if rval != None:  # {
-                    self.__optVals[opData['short']] = rval # FIXME this is silly
-                    self.__optVals[opData['long']] = rval 
-                # }
-            # }
-        # }
-    # }
-
-    @doc()  # exactly like build() except if anything goes wrong it automatically shows usage()
-    @params( argv=list )  # generally sys.argv
-    @output( bool )  # true if everything went well, false if there was an arg parse problem
-    def buildSafe( self, argv ):  # {
-        try:  # {
-            self.build( sys.argv )
-            return True
-        except Exception as err:
-            print ("Invalid Usage: %s\n" % str( err ).rstrip())
-            print (self.usage())
-        # }
-        return False
-    # }
-
-    @doc()  # get a value by key if it was entered by the user else defaultValue
-    @params( key=str )  # the short or long opt name without the leading "-" or "--"
-    @params( defaultValue="any" )  # the value you will be given if the key is not found
-    @output( "varies" )  # True for opType=None opts that are present, else the value entered by the user
-    def get( self, key, defaultValue=None ):  # {
-        out = defaultValue
-        try:  # {
-            if key != "_":  # {
-                if self.__optLookup[key]['type']:
-                    if key in self.__optVals:
-                        out = self.__optVals[key]
-                else:
-                    out = key in self.__optVals
-                    if self.__optVals[key]:
-                        out = self.__optVals[key]
-            # }
-        except Exception as err:
-            pass
-        # }
-        return out
-    # }
-
-    @doc()  # you may call this directly or it will be called for you via buildSafe().
-    @doc()  # Auto-generated usage based on the opts you configured via add()
-    def usage( self ):  # {
-        out = ""
-
-        if self.__description:  # {
-            for desc in self.__description:
-                out += ( desc + "\n" ) if desc else ""
-            out += "\n"
-        # }
-
-        for req in [True, False]:  # {
-            if req and self.__hasRequired:
-                out += "Required Arguments:\n"
-            if not req and self.__hasNotRequired:
-                out += "Optional Arguments:\n"
-
-            for opt in self.__optData:  # {
-                if opt['req'] != req:
-                    continue
-                if not opt['public']:
-                    continue
-
-                if opt['long'] != "_":
-                    optName = opt['long']
-                    optName += ( "=<" + opt['type'] + ">" ) if opt['type'] else ""
-                    desc = opt['desc']
-                    outLong = ( "  --%-" + str( self.__widest ) + "s%s\n" ) % ( optName, opt['desc'] )
-                    out += outLong
-
-                if opt['short'] != "_":
-                    optName = opt['short']
-                    optName += ( " <" + opt['type'] + ">" ) if opt['type'] else ""
-                    desc = ( "Short for: --%s" % opt['long'] ) if opt['long'] and opt['long'] != "_" else opt['desc']
-                    outShort = ( "   -%-" + str( self.__widest ) + "s%s\n" ) % ( optName, desc )
-                    out += outShort
-
-            # }
-        # }
-        return out
-    # } usage
-
-    @staticmethod
-    def usagePrintBlock(): # {
-        filepath = main.__file__
-        with open( filepath ) as fh:
-            line = fh.readline
-            inblock = False
-            while ( line ):
-                line = fh.readline()
-                if ( StrUtl.containsci( "<USAGE>", line ) ):
-                    inblock = True
-                    continue
-                if ( StrUtl.containsci( "</USAGE>", line ) ):
-                    inblock = False
-                    return
-                if inblock: print (line.rstrip())
-    # }
-# } GetOpts
-
-
 # DirUtl #########################
 class DirUtl:  # {
     __cwd = []
@@ -841,6 +597,32 @@ class FileUtl: # {
                 line = StrUtl.rstrip(line)
                 methodLine( filepath, line, state )
                 line = fh.readline()
+    # }
+# }
+
+@doc() # WORK IN PROGRESS
+class UserState: # {
+    __state = {} # key value pairs of
+
+    @output( str ) # Whatever was previously associated with this key or None
+    def put(self, key, value): # {
+        prev = None
+        if key in self.__state:
+            prev = self.get(key, None)
+        self.__state[key] = value
+        return prev
+    # }
+
+    def get(self, key, defaultVal=None): # {
+        return self.__state.get(key, defaultVal)
+    # }
+
+    def read(self): # {
+        pass
+    # }
+
+    def write(self): # {
+        pass
     # }
 # }
 
