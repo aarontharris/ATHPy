@@ -348,6 +348,11 @@ class StrUtl:
         return False
     # }
 
+    @doc()  # strip left and right side whitespace
+    @staticmethod
+    def strip( string ):
+        return StrUtl.lstrip( StrUtl.rstrip( string ) )
+
     @doc()  # static nullsafe version of string.lstrip()
     @staticmethod
     def lstrip( string ):
@@ -442,6 +447,29 @@ class StrUtl:
             left = string[0:idx]
             right = string[idx+1:]
         return [left,right]
+    # }
+
+    @staticmethod
+    def capitalize( string ):
+        if len(string) == 1:
+            return StrUtl.toUpper(string)
+        else:
+            return StrUtl.toUpper(string[0:1]) + string[1:]
+    # }
+
+    @staticmethod
+    def snakeToCamel( string ): # {
+        if string is None:
+            return ""
+
+        result = ""
+        parts = string.split("_")
+        for i in range(len(parts)):
+            part = parts[i]
+            if i > 0:
+                part = StrUtl.capitalize(part)
+            result = result + part
+        return result
     # }
 
 
@@ -576,10 +604,14 @@ class FileUtl: # {
                 fh.write(line + "\n")
     # }
 
+    @params( chomp=bool ) # true will remove the newline char from the line
     @staticmethod
-    def readAllLinesIntoArray( filepath ):
+    def readAllLinesIntoArray( filepath, chomp=False ):
         with open( filepath ) as fh:
             lines = fh.readlines()
+        if chomp:
+            for i in range(len(lines)):
+                lines[i] = StrUtl.chomp(lines[i])
         return lines
 
     @doc()  # Read a file line by line and process the line in the given callback
