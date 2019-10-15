@@ -77,8 +77,8 @@ class ATOpts: # {
     def add( self, opt:Opt ): # {
         self.__opts.append(opt)
         opts = self.__opts
-        if ( len(opts) > 0 and opts[-1].isPos() ):
-            raise Exception("err")
+        #if ( len(opts) > 0 and opts[-1].isPos() ):
+        #    raise Exception("err")
     # }
 
     # @param - key - the key associated with the value
